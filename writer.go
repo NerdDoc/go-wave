@@ -148,6 +148,10 @@ func (w *Writer) Close() error {
 		//data chunk
 		ew.Write(binary.BigEndian, w.dataChunk.ID)
 		ew.Write(binary.LittleEndian, w.dataChunk.Size)
+	} else {
+		//data chunk
+		ew.Write(binary.BigEndian, w.dataChunk.ID)
+		ew.Write(binary.LittleEndian, w.dataChunk.Size)
 	}
 
 	if ew.err != nil {
