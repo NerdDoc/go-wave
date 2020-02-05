@@ -12,6 +12,7 @@ type WriterParam struct {
 	Channel       int
 	SampleRate    int
 	BitsPerSample int
+	RawPcm        bool
 }
 
 type Writer struct {
@@ -21,6 +22,7 @@ type Writer struct {
 	riffChunk *RiffChunk
 	fmtChunk  *FmtChunk
 	dataChunk *DataWriterChunk
+	RawPcm    bool
 }
 
 func NewWriter(param WriterParam) (*Writer, error) {
@@ -30,25 +32,31 @@ func NewWriter(param WriterParam) (*Writer, error) {
 	blockSize := uint16(param.BitsPerSample*param.Channel) / 8
 	samplesPerSec := uint32(int(blockSize) * param.SampleRate)
 	//	fmt.Println(blockSize, param.SampleRate, samplesPerSec)
+	if param.RawPcm == false {
 
-	// riff chunk
-	w.riffChunk = &RiffChunk{
-		ID:         []byte(riffChunkToken),
-		FormatType: []byte(waveFormatType),
+		// riff chunk
+		w.riffChunk = &RiffChunk{
+			ID:         []byte(riffChunkToken),
+			FormatType: []byte(waveFormatType),
+		}
+		// fmt chunk
+		w.fmtChunk = &FmtChunk{
+			ID:   []byte(fmtChunkToken),
+			Size: uint32(fmtChunkSize),
+		}
+		w.fmtChunk.Data = &WavFmtChunkData{
+			WaveFormatType: uint16(1), // PCM
+			Channel:        uint16(param.Channel),
+			SamplesPerSec:  uint32(param.SampleRate),
+			BytesPerSec:    samplesPerSec,
+			BlockSize:      uint16(blockSize),
+			BitsPerSamples: uint16(param.BitsPerSample),
+		}
+		w.RawPcm = true
+	} else {
+		w.RawPcm = false
 	}
-	// fmt chunk
-	w.fmtChunk = &FmtChunk{
-		ID:   []byte(fmtChunkToken),
-		Size: uint32(fmtChunkSize),
-	}
-	w.fmtChunk.Data = &WavFmtChunkData{
-		WaveFormatType: uint16(1), // PCM
-		Channel:        uint16(param.Channel),
-		SamplesPerSec:  uint32(param.SampleRate),
-		BytesPerSec:    samplesPerSec,
-		BlockSize:      uint16(blockSize),
-		BitsPerSamples: uint16(param.BitsPerSample),
-	}
+
 	// data chunk
 	w.dataChunk = &DataWriterChunk{
 		ID:   []byte(dataChunkToken),
@@ -126,19 +134,21 @@ func (w *Writer) Close() error {
 	w.dataChunk.Size = dataSize
 
 	ew := &errWriter{w: w.out}
-	// riff chunk
-	ew.Write(binary.BigEndian, w.riffChunk.ID)
-	ew.Write(binary.LittleEndian, w.riffChunk.Size)
-	ew.Write(binary.BigEndian, w.riffChunk.FormatType)
+	if w.RawPcm == true {
+		// riff chunk
+		ew.Write(binary.BigEndian, w.riffChunk.ID)
+		ew.Write(binary.LittleEndian, w.riffChunk.Size)
+		ew.Write(binary.BigEndian, w.riffChunk.FormatType)
 
-	// fmt chunk
-	ew.Write(binary.BigEndian, w.fmtChunk.ID)
-	ew.Write(binary.LittleEndian, w.fmtChunk.Size)
-	ew.Write(binary.LittleEndian, w.fmtChunk.Data)
+		// fmt chunk
+		ew.Write(binary.BigEndian, w.fmtChunk.ID)
+		ew.Write(binary.LittleEndian, w.fmtChunk.Size)
+		ew.Write(binary.LittleEndian, w.fmtChunk.Data)
 
-	//data chunk
-	ew.Write(binary.BigEndian, w.dataChunk.ID)
-	ew.Write(binary.LittleEndian, w.dataChunk.Size)
+		//data chunk
+		ew.Write(binary.BigEndian, w.dataChunk.ID)
+		ew.Write(binary.LittleEndian, w.dataChunk.Size)
+	}
 
 	if ew.err != nil {
 		return ew.err
