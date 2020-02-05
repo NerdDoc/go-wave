@@ -36,7 +36,7 @@ func main() {
 			_data = 0.0
 		}
 		data := uint16(_data+0.5) - 32768 // 四捨五入とデータのオフセット調整
-		_, err = w.WriteSample16([]uint16{data})
+		_, err = w.WriteSample16([]int16{data})
 		if err != nil {
 			panic(err)
 		}
