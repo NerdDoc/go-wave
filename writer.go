@@ -33,46 +33,28 @@ func NewWriter(param WriterParam) (*Writer, error) {
 	samplesPerSec := uint32(int(blockSize) * param.SampleRate)
 	//	fmt.Println(blockSize, param.SampleRate, samplesPerSec)
 	if param.RawPcm == false {
-
-		// riff chunk
-		w.riffChunk = &RiffChunk{
-			ID:         []byte(riffChunkToken),
-			FormatType: []byte(waveFormatType),
-		}
-		// fmt chunk
-		w.fmtChunk = &FmtChunk{
-			ID:   []byte(fmtChunkToken),
-			Size: uint32(fmtChunkSize),
-		}
-		w.fmtChunk.Data = &WavFmtChunkData{
-			WaveFormatType: uint16(1), // PCM
-			Channel:        uint16(param.Channel),
-			SamplesPerSec:  uint32(param.SampleRate),
-			BytesPerSec:    samplesPerSec,
-			BlockSize:      uint16(blockSize),
-			BitsPerSamples: uint16(param.BitsPerSample),
-		}
 		w.RawPcm = true
 	} else {
-		// riff chunk
-		w.riffChunk = &RiffChunk{
-			ID:         []byte(riffChunkToken),
-			FormatType: []byte(waveFormatType),
-		}
-		// fmt chunk
-		w.fmtChunk = &FmtChunk{
-			ID:   []byte(fmtChunkToken),
-			Size: uint32(fmtChunkSize),
-		}
-		w.fmtChunk.Data = &WavFmtChunkData{
-			WaveFormatType: uint16(1), // PCM
-			Channel:        uint16(param.Channel),
-			SamplesPerSec:  uint32(param.SampleRate),
-			BytesPerSec:    samplesPerSec,
-			BlockSize:      uint16(blockSize),
-			BitsPerSamples: uint16(param.BitsPerSample),
-		}
 		w.RawPcm = false
+	}
+
+	// riff chunk
+	w.riffChunk = &RiffChunk{
+		ID:         []byte(riffChunkToken),
+		FormatType: []byte(waveFormatType),
+	}
+	// fmt chunk
+	w.fmtChunk = &FmtChunk{
+		ID:   []byte(fmtChunkToken),
+		Size: uint32(fmtChunkSize),
+	}
+	w.fmtChunk.Data = &WavFmtChunkData{
+		WaveFormatType: uint16(1), // PCM
+		Channel:        uint16(param.Channel),
+		SamplesPerSec:  uint32(param.SampleRate),
+		BytesPerSec:    samplesPerSec,
+		BlockSize:      uint16(blockSize),
+		BitsPerSamples: uint16(param.BitsPerSample),
 	}
 
 	// data chunk
