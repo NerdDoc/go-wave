@@ -78,6 +78,30 @@ func NewReader(fileName string) (*Reader, error) {
 	return reader, nil
 }
 
+func NewBytesReader(data[]byte) (*Reader, error) {
+
+	reader := new(Reader)
+	reader.input = bytes.NewReader(data)
+
+	if err := reader.parseRiffChunk(); err != nil {
+		panic(err)
+	}
+	if err := reader.parseFmtChunk(); err != nil {
+		panic(err)
+	}
+	if err := reader.parseListChunk(); err != nil {
+		panic(err)
+	}
+	if err := reader.parseDataChunk(); err != nil {
+		panic(err)
+	}
+
+	reader.NumSamples = reader.DataChunk.Size / uint32(reader.FmtChunk.Data.BlockSize)
+	reader.SampleTime = int(reader.NumSamples / reader.FmtChunk.Data.SamplesPerSec)
+
+	return reader, nil
+}
+
 type csize struct {
 	ChunkSize uint32
 }
